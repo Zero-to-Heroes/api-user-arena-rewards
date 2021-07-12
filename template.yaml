@@ -1,0 +1,99 @@
+# https://github.com/awslabs/serverless-application-model/blob/develop/versions/2016-10-31.md
+# Indentation needs to be set with spaces, because YAML...
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: API endpoint to handle arena rewards for users
+
+Globals:
+    Api:
+        # API Gateway regional endpoints
+        EndpointConfiguration: EDGE
+        Cors:
+            AllowMethods: "'*'"
+            AllowHeaders: "'*'"
+            AllowOrigin: "'*'"
+    Function:
+        Environment:
+            Variables:
+                SQS_URL: !Ref SaveArenaRewardsQueue
+
+Resources:
+    SaveArenaRewardsQueue:
+        Type: AWS::SQS::Queue
+        Properties:
+            QueueName: deferred-save-arena-rewards-queue
+            VisibilityTimeout: 601
+    RetrieveArenaRewardsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: retrieve-arena-rewards.default
+            Runtime: nodejs12.x
+            Timeout: 5
+            MemorySize: 128
+            CodeUri: ./dist/retrieve-arena-rewards
+            Policies:
+                - AWSLambdaVPCAccessExecutionRole
+                - AmazonSESFullAccess
+                - AmazonSQSFullAccess
+                - SecretsManagerReadWrite
+                # - arn:aws:iam::478062583808:policy/CloudWatchPolicyForLambda # See https://stackoverflow.com/questions/51166504/disable-cloudwatch-to-monitor-logs-for-lambda-function
+            Tags:
+                LambdaName: api-retrieve-arena-rewards
+            Events:
+                SaveArenaRewardsResource:
+                    Type: Api
+                    Properties:
+                        Path: /get/{proxy+}
+                        Method: any
+    StartSaveArenaRewardsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: start-save-arena-rewards.default
+            Runtime: nodejs12.x
+            Timeout: 3
+            MemorySize: 128
+            CodeUri: ./dist/start-save-arena-rewards
+            Policies:
+                - AWSLambdaVPCAccessExecutionRole
+                - AmazonSESFullAccess
+                - AmazonSQSFullAccess
+                - SecretsManagerReadWrite
+                # - arn:aws:iam::478062583808:policy/CloudWatchPolicyForLambda # See https://stackoverflow.com/questions/51166504/disable-cloudwatch-to-monitor-logs-for-lambda-function
+            Tags:
+                LambdaName: api-start-save-arena-rewards
+            Events:
+                SaveArenaRewardsResource:
+                    Type: Api
+                    Properties:
+                        Path: /post/{proxy+}
+                        Method: any
+    ProcessSaveArenaRewardsFunction:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: process-save-arena-rewards.default
+            Runtime: nodejs12.x
+            CodeUri: ./dist/process-save-arena-rewards
+            MemorySize: 128
+            ReservedConcurrentExecutions: 1
+            Policies:
+                - AWSLambdaVPCAccessExecutionRole
+                - SecretsManagerReadWrite
+                - AmazonSESFullAccess
+                - AmazonSQSFullAccess
+                # - arn:aws:iam::478062583808:policy/CloudWatchPolicyForLambda # See https://stackoverflow.com/questions/51166504/disable-cloudwatch-to-monitor-logs-for-lambda-function
+            Tags:
+                LambdaName: process-save-arena-rewards
+            Timeout: 60
+            Events:
+                SQSMapperRequestedEvent:
+                    Type: SQS
+                    Properties:
+                        Queue: !GetAtt SaveArenaRewardsQueue.Arn
+                        # BatchSize: 1
+
+Outputs:
+    SaveArenaRewardsApi:
+        Description: URL to save arena-rewards
+        Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/arenaRewards'
+        Export:
+            Name: SaveArenaRewardsApi
