@@ -32,6 +32,11 @@ const processEvent = async (input: Input, mysql: ServerlessMysql) => {
 		return;
 	}
 
+	if (!input.runId) {
+		console.log('no run id', input);
+		return;
+	}
+
 	const selectQuery = `
 		SELECT count(*) as count FROM arena_rewards
 		WHERE runId = ${escape(input.runId)}
