@@ -10,19 +10,17 @@ export default async (event): Promise<any> => {
 	const mysql = await getConnection();
 
 	const escape = SqlString.escape;
-	const userQuery = `
-		SELECT DISTINCT userId, userName
-		FROM user_mapping
-		WHERE userId = ${escape(input.userId)} OR userName = ${input.userName ? escape(input.userName) : escape('__invalid__')}
-	`;
-	const userMappingDbResults: readonly any[] = await mysql.query(userQuery);
-	console.log(
-		'executed query',
-		userMappingDbResults && userMappingDbResults.length,
-		userMappingDbResults && userMappingDbResults.length > 0 && userMappingDbResults[0],
-	);
 
-	const userIds = [...new Set(userMappingDbResults.map(result => result.userId).filter(userId => userId?.length))];
+	const userIds = await getAllUserIds(input.userId, input.userName, mysql);
+
+	if (!userIds?.length) {
+		return {
+			statusCode: 200,
+			isBase64Encoded: false,
+			body: JSON.stringify({ results: [] }),
+		};
+	}
+
 	// First-time user, no mapping registered yet
 	if (!userIds?.length) {
 		return {
@@ -31,18 +29,10 @@ export default async (event): Promise<any> => {
 		};
 	}
 
-	const userNames = [...new Set(userMappingDbResults.map(result => result.userName))]
-		.filter(userName => userName != '__invalid')
-		.filter(userName => userName?.length && userName.length > 0);
-	const userIdCriteria = `userId IN (${userIds.map(userId => escape(userId)).join(',')})`;
-	const linkWord = userIds.length > 0 && userNames.length > 0 ? 'OR ' : '';
-
-	const userNameCriteria =
-		userNames.length > 0 ? `userName IN (${userNames.map(result => escape(result)).join(',')})` : '';
 	const existingQuery = `
 		SELECT * 
 		FROM arena_rewards
-		WHERE ${userIdCriteria} ${linkWord} ${userNameCriteria}
+		WHERE userId IN (${escape(userIds)})
 	`;
 	const results: readonly ArenaRewardInfo[] = await mysql.query(existingQuery);
 	await mysql.end();
@@ -60,6 +50,29 @@ export default async (event): Promise<any> => {
 	};
 
 	return response;
+};
+
+const getAllUserIds = async (userId: string, userName: string, mysql): Promise<readonly string[]> => {
+	const escape = SqlString.escape;
+	const userSelectQuery = `
+			SELECT DISTINCT userId FROM user_mapping
+			INNER JOIN (
+				SELECT DISTINCT username FROM user_mapping
+				WHERE 
+					(username = ${escape(userName)} OR username = ${escape(userId)} OR userId = ${escape(userId)})
+					AND username IS NOT NULL
+					AND username != ''
+					AND username != 'null'
+					AND userId != ''
+					AND userId IS NOT NULL
+					AND userId != 'null'
+			) AS x ON x.username = user_mapping.username
+			UNION ALL SELECT ${escape(userId)}
+		`;
+	console.log('running query', userSelectQuery);
+	const userIds: any[] = await mysql.query(userSelectQuery);
+	console.log('query over', userIds);
+	return userIds.map(result => result.userId);
 };
 
 export interface ArenaRewardInfo {
