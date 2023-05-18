@@ -27,7 +27,7 @@ Resources:
         Type: AWS::Serverless::Function
         Properties:
             Handler: retrieve-arena-rewards.default
-            Runtime: nodejs12.x
+            Runtime: nodejs16.x
             Timeout: 5
             MemorySize: 128
             CodeUri: ./dist/retrieve-arena-rewards
@@ -45,11 +45,29 @@ Resources:
                     Properties:
                         Path: /get/{proxy+}
                         Method: any
+    RetrieveArenaRewardsFunction2:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: retrieve-arena-rewards.default
+            Runtime: nodejs16.x
+            CodeUri: ./dist/retrieve-arena-rewards
+            Timeout: 5
+            Policies:
+                - AWSLambdaVPCAccessExecutionRole
+                - AmazonSESFullAccess
+                - AmazonSQSFullAccess
+                - SecretsManagerReadWrite
+                - arn:aws:iam::478062583808:policy/CloudWatchPolicyForLambda # See https://stackoverflow.com/questions/51166504/disable-cloudwatch-to-monitor-logs-for-lambda-function
+            Tags:
+                LambdaName: api-retrieve-arena-rewards-2
+            AutoPublishAlias: live
+            FunctionUrlConfig:
+                AuthType: NONE
     StartSaveArenaRewardsFunction:
         Type: AWS::Serverless::Function
         Properties:
             Handler: start-save-arena-rewards.default
-            Runtime: nodejs12.x
+            Runtime: nodejs16.x
             Timeout: 3
             MemorySize: 128
             CodeUri: ./dist/start-save-arena-rewards
@@ -67,11 +85,29 @@ Resources:
                     Properties:
                         Path: /post/{proxy+}
                         Method: any
+    StartSaveArenaRewardsFunction2:
+        Type: AWS::Serverless::Function
+        Properties:
+            Handler: start-save-arena-rewards.default
+            Runtime: nodejs16.x
+            CodeUri: ./dist/start-save-arena-rewards
+            Timeout: 5
+            Policies:
+                - AWSLambdaVPCAccessExecutionRole
+                - AmazonSESFullAccess
+                - AmazonSQSFullAccess
+                - SecretsManagerReadWrite
+                - arn:aws:iam::478062583808:policy/CloudWatchPolicyForLambda # See https://stackoverflow.com/questions/51166504/disable-cloudwatch-to-monitor-logs-for-lambda-function
+            Tags:
+                LambdaName: api-start-save-arena-rewards-2
+            AutoPublishAlias: live
+            FunctionUrlConfig:
+                AuthType: NONE
     ProcessSaveArenaRewardsFunction:
         Type: AWS::Serverless::Function
         Properties:
             Handler: process-save-arena-rewards.default
-            Runtime: nodejs12.x
+            Runtime: nodejs16.x
             CodeUri: ./dist/process-save-arena-rewards
             MemorySize: 128
             ReservedConcurrentExecutions: 1
