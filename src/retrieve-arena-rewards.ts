@@ -4,6 +4,14 @@ import { getConnection } from './db/rds';
 import { Input } from './sqs-event';
 
 export default async (event): Promise<any> => {
+	if (!event?.body?.length) {
+		return {
+			statusCode: 400,
+			isBase64Encoded: false,
+			body: null,
+		};
+	}
+
 	const input: Input = JSON.parse(event.body);
 	console.debug('handling event', input);
 
@@ -72,7 +80,7 @@ const getAllUserIds = async (userId: string, userName: string, mysql): Promise<r
 	console.log('running query', userSelectQuery);
 	const userIds: any[] = await mysql.query(userSelectQuery);
 	console.log('query over', userIds);
-	return userIds.map(result => result.userId);
+	return userIds.map((result) => result.userId);
 };
 
 export interface ArenaRewardInfo {
