@@ -22,7 +22,7 @@ Resources:
             Handler: retrieve-arena-rewards.default
             Runtime: nodejs16.x
             CodeUri: ./dist/retrieve-arena-rewards
-            Timeout: 5
+            Timeout: 7
             Policies:
                 - AWSLambdaVPCAccessExecutionRole
                 - AmazonSESFullAccess
