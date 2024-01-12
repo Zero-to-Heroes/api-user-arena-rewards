@@ -38,12 +38,12 @@ export default async (event): Promise<any> => {
 		};
 	}
 
-	console.debug('getting rewards');
 	const existingQuery = `
 		SELECT * 
 		FROM arena_rewards
 		WHERE userId IN (${escape(userIds)})
 	`;
+	console.debug('getting rewards', existingQuery);
 	const results: readonly ArenaRewardInfo[] = await mysql.query(existingQuery);
 	console.debug('got rewards from db', results?.length);
 	await mysql.end();
