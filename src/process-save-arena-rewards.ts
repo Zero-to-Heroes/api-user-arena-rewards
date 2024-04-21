@@ -38,20 +38,22 @@ const processEvent = async (input: Input, mysql: ServerlessMysql) => {
 	}
 
 	const selectQuery = `
-		SELECT count(*) as count FROM arena_rewards
-		WHERE runId = ${escape(input.runId)}
+		SELECT * FROM arena_rewards
+		WHERE runId = ?
+		AND creationDate > DATE_SUB(NOW(), INTERVAL 2 HOUR)
+		LIMIT 1;
 	`;
 	console.debug('running query', selectQuery);
-	const selectResult: any[] = await mysql.query(selectQuery);
+	const selectResult: any[] = await mysql.query(selectQuery, [input.runId]);
 	console.debug('select result', selectResult);
-	if (selectResult && selectResult.length && selectResult[0].count > 0) {
+	if (selectResult && !!selectResult.length) {
 		console.log('already registered rewards for run', input.runId);
 		return;
 	}
 
 	for (const reward of input.rewards) {
 		const insertQuery = `
-			INSERT INTO arena_rewards
+			INSERT IGNORE INTO arena_rewards
 			(
 				creationDate,
 				userId, 
