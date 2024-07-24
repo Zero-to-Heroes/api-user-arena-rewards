@@ -20,6 +20,7 @@ export default async (event): Promise<any> => {
 	const userIds = await getAllUserIds(input.userId, input.userName, mysql);
 	console.debug('retrieved user ids', userIds);
 
+	// First-time user, no mapping registered yet
 	if (!userIds?.length) {
 		await mysql.end();
 		return {
@@ -29,19 +30,13 @@ export default async (event): Promise<any> => {
 		};
 	}
 
-	// First-time user, no mapping registered yet
-	if (!userIds?.length) {
-		await mysql.end();
-		return {
-			statusCode: 200,
-			body: null,
-		};
-	}
-
+	// Limit the time frame to reduce the query time + reduce the data sent to the user
+	// Since Firestone only shows you rather recent data, there is no point in getting data that is a year old
 	const existingQuery = `
 		SELECT * 
 		FROM arena_rewards
-		WHERE userId IN (${escape(userIds)})
+		WHERE creationDate >= DATE_SUB(NOW(), INTERVAL 3 MONTH)
+		AND userId IN (${escape(userIds)})
 	`;
 	console.debug('getting rewards', existingQuery);
 	const results: readonly ArenaRewardInfo[] = await mysql.query(existingQuery);
