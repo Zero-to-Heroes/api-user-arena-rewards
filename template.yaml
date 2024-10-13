@@ -16,13 +16,16 @@ Resources:
         Properties:
             QueueName: deferred-save-arena-rewards-queue
             VisibilityTimeout: 601
+            Tags:
+                - Key: queue-name
+                  Value: deferred-save-arena-rewards-queue
     RetrieveArenaRewardsFunction2:
         Type: AWS::Serverless::Function
         Properties:
             Handler: retrieve-arena-rewards.default
             Runtime: nodejs18.x
             CodeUri: ./dist/retrieve-arena-rewards
-            Timeout: 10
+            Timeout: 20
             MemorySize: 512 # Increased from the default (128) on 2024-01-31 17:16 CET to monitor the impact on network speed
             # Layers:
             #     - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:14"
@@ -75,7 +78,7 @@ Resources:
                 - AmazonSESFullAccess
                 - AmazonSQSFullAccess
                 - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
-                - arn:aws:iam::478062583808:policy/CloudWatchPolicyForLambda # See https://stackoverflow.com/questions/51166504/disable-cloudwatch-to-monitor-logs-for-lambda-function
+                # - arn:aws:iam::478062583808:policy/CloudWatchPolicyForLambda # See https://stackoverflow.com/questions/51166504/disable-cloudwatch-to-monitor-logs-for-lambda-function
             Tags:
                 LambdaName: process-save-arena-rewards
             Timeout: 60
@@ -84,4 +87,5 @@ Resources:
                     Type: SQS
                     Properties:
                         Queue: !GetAtt SaveArenaRewardsQueue.Arn
-                        # BatchSize: 1
+                        BatchSize: 30
+                        MaximumBatchingWindowInSeconds: 60
