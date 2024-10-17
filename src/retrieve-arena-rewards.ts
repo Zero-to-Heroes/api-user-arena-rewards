@@ -1,6 +1,6 @@
 /* eslint-disable no-extra-boolean-cast */
+import { getConnectionProxy } from '@firestone-hs/aws-lambda-utils';
 import { gzipSync } from 'zlib';
-import { getConnection } from './db/rds';
 import { Input } from './sqs-event';
 
 export default async (event): Promise<any> => {
@@ -13,7 +13,7 @@ export default async (event): Promise<any> => {
 	}
 
 	const input: Input = JSON.parse(event.body);
-	console.debug('handling event', input);
+	// console.debug('handling event', input);
 
 	let query = `
 		SELECT * 
@@ -29,12 +29,17 @@ export default async (event): Promise<any> => {
 			AND userId = ?
 		`;
 	}
-	const mysql = await getConnection();
+	// console.debug('getting connection 2');
+	const mysql = await getConnectionProxy();
+	// console.debug('got connection');
 	const results: readonly ArenaRewardInfo[] = await mysql.query(query, [input.userName || input.userId]);
 	await mysql.end();
 
+	// console.debug('will stringify results');
 	const stringResults = JSON.stringify(results);
+	// console.debug('stringified results');
 	const gzippedResults = stringResults ? gzipSync(stringResults).toString('base64') : null;
+	// console.debug('gzipped results');
 	const response = {
 		statusCode: 200,
 		isBase64Encoded: true,

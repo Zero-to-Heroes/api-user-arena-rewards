@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
+import { getConnectionProxy } from '@firestone-hs/aws-lambda-utils';
 import { ServerlessMysql } from 'serverless-mysql';
 import SqlString from 'sqlstring';
-import { getConnection } from './db/rds';
 import { Input } from './sqs-event';
 
 export default async (event, context): Promise<any> => {
@@ -10,7 +10,8 @@ export default async (event, context): Promise<any> => {
 		.reduce((a, b) => a.concat(b), [])
 		.filter((event) => event);
 
-	const mysql = await getConnection();
+	console.log('processing', events.length, 'events');
+	const mysql = await getConnectionProxy();
 	for (const ev of events) {
 		await processEvent(ev, mysql);
 	}

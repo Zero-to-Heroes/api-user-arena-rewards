@@ -27,6 +27,11 @@ Resources:
             CodeUri: ./dist/retrieve-arena-rewards
             Timeout: 20
             MemorySize: 512 # Increased from the default (128) on 2024-01-31 17:16 CET to monitor the impact on network speed
+            VpcConfig:
+                SecurityGroupIds:
+                    - sg-eccd2691
+                SubnetIds:
+                    - subnet-894624ec # Only the private subnet
             # Layers:
             #     - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:14"
             Policies:
@@ -35,6 +40,8 @@ Resources:
                 - AmazonSQSFullAccess
                 - SecretsManagerReadWrite
                 - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+                # For VPC
+                - AWSLambdaENIManagementAccess
                 # - arn:aws:iam::478062583808:policy/CloudWatchPolicyForLambda # See https://stackoverflow.com/questions/51166504/disable-cloudwatch-to-monitor-logs-for-lambda-function
             Tags:
                 LambdaName: api-retrieve-arena-rewards-2
@@ -70,6 +77,11 @@ Resources:
             CodeUri: ./dist/process-save-arena-rewards
             MemorySize: 128
             ReservedConcurrentExecutions: 1
+            VpcConfig:
+                SecurityGroupIds:
+                    - sg-eccd2691
+                SubnetIds:
+                    - subnet-894624ec # Only the private subnet
             # Layers:
             #     - !Sub "arn:aws:lambda:${AWS::Region}:580247275435:layer:LambdaInsightsExtension:14"
             Policies:
@@ -78,6 +90,8 @@ Resources:
                 - AmazonSESFullAccess
                 - AmazonSQSFullAccess
                 - arn:aws:iam::aws:policy/CloudWatchLambdaInsightsExecutionRolePolicy
+                # For VPC
+                - AWSLambdaENIManagementAccess
                 # - arn:aws:iam::478062583808:policy/CloudWatchPolicyForLambda # See https://stackoverflow.com/questions/51166504/disable-cloudwatch-to-monitor-logs-for-lambda-function
             Tags:
                 LambdaName: process-save-arena-rewards
